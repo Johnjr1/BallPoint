@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useImperativeHandle } from 'react';
 import { Camera, RefreshCw, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { GeminiLiveService } from '../services/geminiService';
 import { ShotResult, CourtPosition } from '../types';
@@ -13,7 +13,14 @@ interface CameraViewProps {
 const FRAME_RATE = 5; // Frames per second sent to AI
 const JPEG_QUALITY = 0.7;
 
-export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive, currentInstruction, activePosition }) => {
+export type CameraViewHandle = {
+  toggleCamera: () => void;
+};
+
+export const CameraView = React.forwardRef<CameraViewHandle, CameraViewProps>(function CameraView(
+  { onShotRecorded, isActive, currentInstruction, activePosition },
+  ref
+) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -66,6 +73,10 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
     // Small delay to let state update propagate; call startCamera after state change
     setTimeout(() => startCamera(), 200);
   };
+
+  useImperativeHandle(ref, () => ({
+    toggleCamera: () => switchCamera(),
+  }), [switchCamera]);
 
   // Trigger visual shot feedback
   const showShotFeedback = (result: ShotResult, position: CourtPosition) => {
@@ -163,10 +174,13 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
 
   useEffect(() => {
     startCamera();
+    const handler = () => switchCamera();
+    window.addEventListener('camera-toggle', handler as EventListener);
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+      window.removeEventListener('camera-toggle', handler as EventListener);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -287,4 +301,4 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
       </div>
     </div>
   );
-};
+});

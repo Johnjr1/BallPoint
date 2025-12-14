@@ -201,12 +201,13 @@ function App() {
                  </div>
              ) : (
                 <div className="flex-1 rounded-2xl overflow-hidden shadow-2xl relative">
-                    <CameraView 
-                        onShotRecorded={handleShotRecorded} 
-                        isActive={!session.completed}
-                        currentInstruction={getInstruction()}
-                        activePosition={getActivePosition()}
-                    />
+                  <CameraView 
+                    ref={/* camera ref set below */ null as any}
+                    onShotRecorded={handleShotRecorded} 
+                    isActive={!session.completed}
+                    currentInstruction={getInstruction()}
+                    activePosition={getActivePosition()}
+                  />
                 </div>
              )}
              
@@ -239,6 +240,16 @@ function App() {
           >
             <Home size={24} />
             <span className="text-[10px] font-medium uppercase tracking-wide">Drills</span>
+          </button>
+
+          <button 
+            onClick={() => {
+              /* center camera button toggles camera facing when CameraView is mounted */
+              window.dispatchEvent(new Event('camera-toggle'));
+            }}
+            className={`relative -top-6 bg-orange-600 text-white p-4 rounded-full shadow-[0_4px_14px_rgba(234,88,12,0.4)] transition-transform active:scale-95`}
+          >
+            <Camera size={28} />
           </button>
 
           <button 
