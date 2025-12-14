@@ -240,16 +240,6 @@ function App() {
             <Home size={24} />
             <span className="text-[10px] font-medium uppercase tracking-wide">Drills</span>
           </button>
-          
-          <button 
-            onClick={() => {
-                if (session && session.isActive) setCurrentView(AppView.ACTIVE_DRILL);
-            }}
-            disabled={!session || !session.isActive}
-            className={`relative -top-6 bg-orange-600 text-white p-4 rounded-full shadow-[0_4px_14px_rgba(234,88,12,0.4)] transition-transform active:scale-95 ${(!session || !session.isActive) ? 'opacity-50 grayscale' : ''}`}
-          >
-            <Camera size={28} />
-          </button>
 
           <button 
             onClick={() => setCurrentView(AppView.STATS)}

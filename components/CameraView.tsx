@@ -17,6 +17,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [status, setStatus] = useState<string>('Initializing...');
   const [geminiService, setGeminiService] = useState<GeminiLiveService | null>(null);
   const frameIntervalRef = useRef<number | null>(null);
@@ -41,8 +42,13 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
 
   const startCamera = async () => {
     try {
+      // Stop existing tracks if any
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+      }
+
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }, // Use back camera on mobile
+        video: { facingMode }, // Use selected camera (back or front)
         audio: false 
       });
       setStream(mediaStream);
@@ -53,6 +59,12 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
       console.error("Error accessing camera:", err);
       setStatus("Camera Error");
     }
+  };
+
+  const switchCamera = async () => {
+    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
+    // Small delay to let state update propagate; call startCamera after state change
+    setTimeout(() => startCamera(), 200);
   };
 
   // Trigger visual shot feedback
@@ -242,6 +254,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
             {currentInstruction}
           </div>
         </div>
+        {/* Shot Feedback Overlay (Static Big Icon) */}
 
         {/* Shot Feedback Overlay (Static Big Icon) */}
         {lastShotFeedback && (
@@ -259,6 +272,18 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
         <div className="text-center text-white/50 text-xs mb-2 mt-auto">
           Align zones with court floor.
         </div>
+      </div>
+
+      {/* Camera facing toggle (mobile/front-back) - placed outside the pointer-events-none overlay so it can be interactive */}
+      <div className="absolute top-4 right-4 pointer-events-auto p-2">
+        <button
+          onClick={switchCamera}
+          className="bg-black/60 text-white px-3 py-1 rounded-full text-sm font-medium shadow hover:bg-black/80"
+          aria-label="Switch camera"
+          title="Switch front/back camera"
+        >
+          {facingMode === 'environment' ? 'Back' : 'Front'}
+        </button>
       </div>
     </div>
   );
