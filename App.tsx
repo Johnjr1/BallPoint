@@ -4,6 +4,7 @@ import { DrillSelector } from './components/DrillSelector';
 import { CameraView } from './components/CameraView';
 import { StatsDashboard } from './components/StatsDashboard';
 import { AppView, DrillSession, DrillStep, Shot, ShotResult, CourtPosition } from './types';
+import { storageService } from './services/storageService';
 
 function App() {
   const [currentView, setCurrentView] = useState<AppView>(AppView.HOME);
@@ -92,8 +93,14 @@ function App() {
         const attempts = relevantShots.length;
 
         let stepComplete = false;
-        if (step.targetMakes && makes >= step.targetMakes) stepComplete = true;
-        if (step.targetAttempts && attempts >= step.targetAttempts) stepComplete = true;
+        // Prioritize targetAttempts: move to next zone after X shots regardless of makes/misses
+        if (step.targetAttempts && attempts >= step.targetAttempts) {
+            stepComplete = true;
+        }
+        // If no targetAttempts, check for targetMakes
+        else if (step.targetMakes && makes >= step.targetMakes) {
+            stepComplete = true;
+        }
 
         if (stepComplete) {
             vibrate(); // Haptic Feedback
@@ -126,6 +133,9 @@ function App() {
   // Effect to handle session completion redirect
   useEffect(() => {
     if (session?.completed) {
+        // Save the session to persistent storage
+        storageService.saveSession(session.shots);
+        
         setTimeout(() => {
             setCurrentView(AppView.STATS);
         }, 2000); // Give time to celebrate

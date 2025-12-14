@@ -1,13 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Shot, ShotResult, CourtPosition } from '../types';
-import { Trophy, Target, Activity } from 'lucide-react';
+import { Trophy, Target, Activity, Download, Trash2 } from 'lucide-react';
+import { storageService } from '../services/storageService';
 
 interface StatsDashboardProps {
   shots: Shot[];
 }
 
 export const StatsDashboard: React.FC<StatsDashboardProps> = ({ shots }) => {
+  const [overallStats, setOverallStats] = useState(storageService.getOverallStats());
+
+  useEffect(() => {
+    setOverallStats(storageService.getOverallStats());
+  }, [shots]);
+
+  const handleExport = () => {
+    storageService.exportToJSON();
+  };
+
+  const handleClearStats = () => {
+    if (window.confirm('Are you sure you want to clear all statistics? This cannot be undone.')) {
+      storageService.clearAllStats();
+      setOverallStats(storageService.getOverallStats());
+    }
+  };
   // Calculate aggregate stats
   const totalShots = shots.length;
   const madeShots = shots.filter(s => s.result === ShotResult.MAKE).length;
@@ -35,6 +52,41 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({ shots }) => {
         <Activity size={64} className="mb-4 opacity-50" />
         <h3 className="text-xl font-bold mb-2">No Data Yet</h3>
         <p>Complete a training drill to see your analytics.</p>
+        
+        {/* Show all-time stats even if no current session */}
+        {overallStats.totalSessions > 0 && (
+          <div className="mt-8 w-full max-w-md space-y-4">
+            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+              <h4 className="text-sm font-bold text-slate-400 mb-4">All-Time Statistics</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-slate-500">Sessions</p>
+                  <p className="text-2xl font-bold text-orange-500">{overallStats.totalSessions}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Average %</p>
+                  <p className="text-2xl font-bold text-orange-500">{overallStats.averagePercentage}%</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Total Shots</p>
+                  <p className="text-2xl font-bold text-slate-300">{overallStats.totalShots}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Total Makes</p>
+                  <p className="text-2xl font-bold text-green-400">{overallStats.totalMakes}</p>
+                </div>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleExport}
+              className="flex items-center justify-center gap-2 w-full bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg transition-colors"
+            >
+              <Download size={18} />
+              Export Stats
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -72,6 +124,47 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({ shots }) => {
             </span>
         </div>
       </div>
+
+      {/* All-Time Stats Card */}
+      {overallStats.totalSessions > 0 && (
+        <div className="bg-gradient-to-br from-orange-900/30 to-orange-950/30 rounded-xl p-4 border border-orange-800">
+          <h3 className="text-sm font-bold text-orange-300 mb-3">All-Time Statistics</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-orange-400">Sessions</p>
+              <p className="text-2xl font-bold text-orange-500">{overallStats.totalSessions}</p>
+            </div>
+            <div>
+              <p className="text-xs text-orange-400">Average %</p>
+              <p className="text-2xl font-bold text-orange-500">{overallStats.averagePercentage}%</p>
+            </div>
+            <div>
+              <p className="text-xs text-orange-400">Total Shots</p>
+              <p className="text-lg font-mono text-slate-300">{overallStats.totalShots}</p>
+            </div>
+            <div>
+              <p className="text-xs text-orange-400">Total Makes</p>
+              <p className="text-lg font-mono text-green-400">{overallStats.totalMakes}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* All-Time Position Stats */}
+      {overallStats.totalSessions > 0 && overallStats.positionStats && (
+        <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+          <h3 className="text-sm font-bold text-slate-400 mb-4">All-Time Accuracy by Position</h3>
+          <div className="grid grid-cols-3 gap-3">
+            {Object.entries(overallStats.positionStats).map(([position, stats]) => (
+              <div key={position} className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">{position}</p>
+                <p className="text-2xl font-bold text-orange-500 mb-1">{stats.percentage}%</p>
+                <p className="text-xs text-slate-400">{stats.makes}/{stats.attempts}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Chart */}
       <div className="bg-slate-900 rounded-xl p-4 border border-slate-800 shadow-inner">
@@ -122,6 +215,24 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({ shots }) => {
                   ))}
               </tbody>
           </table>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3">
+        <button
+          onClick={handleExport}
+          className="flex-1 flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl transition-colors font-medium"
+        >
+          <Download size={18} />
+          Export Stats
+        </button>
+        <button
+          onClick={handleClearStats}
+          className="flex-1 flex items-center justify-center gap-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-800 py-3 rounded-xl transition-colors font-medium"
+        >
+          <Trash2 size={18} />
+          Clear Data
+        </button>
       </div>
     </div>
   );

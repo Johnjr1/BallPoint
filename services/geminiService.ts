@@ -86,14 +86,31 @@ export class GeminiLiveService {
       config: {
         responseModalities: [Modality.AUDIO], // We want it to speak, but primarily use tools
         systemInstruction: `
-          You are an expert basketball AI referee. 
-          Your job is to visually analyze the video stream of a basketball practice.
-          Identify when a player shoots the ball.
-          Determine the outcome: 'MAKE' (ball goes through hoop) or 'MISS'.
-          Determine the position relative to the hoop: 'LEFT', 'CENTER', or 'RIGHT'.
-          IMMEDIATELY call the 'logShot' function when a shot completes.
-          Ignore dribbling or non-shooting actions.
-          Be precise and fast.
+          SIMPLE BASKETBALL SHOT DETECTOR
+          
+          WATCH THE ORANGE CIRCLE AT THE TOP-CENTER OF THE SCREEN.
+          
+          YOUR JOB:
+          1. Watch for ANY object (ball) approaching the orange circle
+          2. If the orange circle gets BLOCKED or COVERED by the object = REPORT 'MAKE' (scored)
+          3. If the object MISSES and doesn't cover the circle = REPORT 'MISS'
+          4. Report the shooting position: LEFT, CENTER, or RIGHT
+          
+          WHAT TO LOOK FOR:
+          - Orange circle is always visible at top-center
+          - When ball is thrown, it moves toward the circle
+          - If ball covers/blocks the orange circle = ball went through = MAKE
+          - If you see the ball but it never covers the orange circle = MISS
+          - If you see the circle get blocked, call logShot with MAKE immediately
+          - If you see a throw that misses the circle, call logShot with MISS immediately
+          
+          BE AGGRESSIVE:
+          - Call logShot EVERY TIME you see a shot (throw toward basket)
+          - Don't overthink - if circle gets covered, that's a MAKE
+          - If ball visible but circle stays clear, that's a MISS
+          - Detect position by where the throw comes from: LEFT/CENTER/RIGHT
+          
+          CALL THE FUNCTION FOR EVERY SHOT YOU SEE.
         `,
         tools: [{ functionDeclarations: [logShotTool] }],
       }
@@ -113,6 +130,7 @@ export class GeminiLiveService {
                 data: base64Image
             }
         });
+        console.log('Frame sent to Gemini');
     } catch (e) {
         console.error("Error sending frame", e);
     }

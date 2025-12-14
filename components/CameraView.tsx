@@ -10,8 +10,8 @@ interface CameraViewProps {
   activePosition?: CourtPosition;
 }
 
-const FRAME_RATE = 2; // Frames per second sent to AI
-const JPEG_QUALITY = 0.5;
+const FRAME_RATE = 5; // Frames per second sent to AI
+const JPEG_QUALITY = 0.7;
 
 export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive, currentInstruction, activePosition }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -22,7 +22,6 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
   const frameIntervalRef = useRef<number | null>(null);
   
   // Animation States
-  const [flyingBall, setFlyingBall] = useState<{id: number, startX: string, result: ShotResult} | null>(null);
   const [lastShotFeedback, setLastShotFeedback] = useState<{result: string, position: string} | null>(null);
 
   // Helper to convert blob to base64
@@ -56,22 +55,11 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
     }
   };
 
-  // Trigger visual ball simulation
-  const simulateShot = (result: ShotResult, position: CourtPosition) => {
-      // Determine start X based on position
-      let startX = '50%';
-      if (position === CourtPosition.LEFT) startX = '20%';
-      if (position === CourtPosition.RIGHT) startX = '80%';
-      
-      setFlyingBall({ id: Date.now(), startX, result });
-      
-      // Clear ball after animation
-      setTimeout(() => {
-          setFlyingBall(null);
-          // Show big feedback after ball hits hoop (approx 600ms)
-          setLastShotFeedback({ result, position });
-          setTimeout(() => setLastShotFeedback(null), 1500);
-      }, 600);
+  // Trigger visual shot feedback
+  const showShotFeedback = (result: ShotResult, position: CourtPosition) => {
+      // Show big feedback after shot is detected
+      setLastShotFeedback({ result, position });
+      setTimeout(() => setLastShotFeedback(null), 1500);
   };
 
   // Initialize Gemini Service
@@ -94,7 +82,7 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
         const result = res === 'MAKE' ? ShotResult.MAKE : ShotResult.MISS;
         const position = pos === 'LEFT' ? CourtPosition.LEFT : pos === 'RIGHT' ? CourtPosition.RIGHT : CourtPosition.CENTER;
         
-        simulateShot(result, position);
+        showShotFeedback(result, position);
         onShotRecorded(result, position);
       }
     });
@@ -110,18 +98,12 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
     const handleKeyDown = (e: KeyboardEvent) => {
         if (!isActive || !activePosition) return;
         
-        // Prevent repeated keys if needed, though rapid fire might be desired for testing
-        
         if (e.key === 'ArrowUp') {
-            simulateShot(ShotResult.MAKE, activePosition);
-            // Delay the actual record slightly to match animation? 
-            // Better to record immediately for app logic state, animation is visual only.
-            // But if we want the "Result" sound to happen when ball hits, we might delay calling onShotRecorded.
-            // Let's call it after 500ms to sync with "ball hitting hoop".
-            setTimeout(() => onShotRecorded(ShotResult.MAKE, activePosition), 500);
+            showShotFeedback(ShotResult.MAKE, activePosition);
+            onShotRecorded(ShotResult.MAKE, activePosition);
         } else if (e.key === 'ArrowDown') {
-            simulateShot(ShotResult.MISS, activePosition);
-            setTimeout(() => onShotRecorded(ShotResult.MISS, activePosition), 500);
+            showShotFeedback(ShotResult.MISS, activePosition);
+            onShotRecorded(ShotResult.MISS, activePosition);
         }
     };
     
@@ -272,37 +254,6 @@ export const CameraView: React.FC<CameraViewProps> = ({ onShotRecorded, isActive
              </div>
           </div>
         )}
-
-        {/* Flying Ball Animation */}
-        {flyingBall && (
-             <div 
-                key={flyingBall.id}
-                className="absolute w-8 h-8 bg-orange-500 rounded-full shadow-lg border-2 border-orange-300 z-50"
-                style={{
-                    left: flyingBall.startX,
-                    bottom: '0%',
-                    transform: 'translate(-50%, 0)',
-                    animation: 'throwBall 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards'
-                }}
-             />
-        )}
-        
-        <style>{`
-            @keyframes throwBall {
-                0% {
-                    bottom: 0%;
-                    transform: translate(-50%, 0) scale(1.5);
-                }
-                50% {
-                   transform: translate(-50%, 0) scale(1);
-                }
-                100% {
-                    bottom: 70%; /* Hoop height */
-                    left: 50%;
-                    transform: translate(-50%, 0) scale(0.6);
-                }
-            }
-        `}</style>
 
         {/* Controls hint */}
         <div className="text-center text-white/50 text-xs mb-2 mt-auto">
