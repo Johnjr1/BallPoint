@@ -268,6 +268,17 @@ export const CameraView = React.forwardRef<CameraViewHandle, CameraViewProps>(fu
             {currentInstruction}
           </div>
         </div>
+        {/* Camera facing toggle (mobile/front-back) placed inside overlay with pointer events enabled */}
+        <div className="pointer-events-auto absolute top-4 right-4 z-50">
+          <button
+            onClick={switchCamera}
+            className="bg-black/70 text-white p-2 rounded-full text-sm font-medium shadow hover:bg-black/90 flex items-center justify-center"
+            aria-label="Switch camera"
+            title="Switch front/back camera"
+          >
+            <RefreshCw size={18} />
+          </button>
+        </div>
         {/* Shot Feedback Overlay (Static Big Icon) */}
 
         {/* Shot Feedback Overlay (Static Big Icon) */}
@@ -288,17 +299,6 @@ export const CameraView = React.forwardRef<CameraViewHandle, CameraViewProps>(fu
         </div>
       </div>
 
-      {/* Camera facing toggle (mobile/front-back) - placed outside the pointer-events-none overlay so it can be interactive */}
-      <div className="absolute top-4 right-4 pointer-events-auto p-2">
-        <button
-          onClick={switchCamera}
-          className="bg-black/60 text-white px-3 py-1 rounded-full text-sm font-medium shadow hover:bg-black/80"
-          aria-label="Switch camera"
-          title="Switch front/back camera"
-        >
-          {facingMode === 'environment' ? 'Back' : 'Front'}
-        </button>
-      </div>
     </div>
   );
 });
