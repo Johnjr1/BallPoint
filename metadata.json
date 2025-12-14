@@ -1,0 +1,8 @@
+{
+  "name": "BallPoint - Smart Shot Tracker",
+  "description": "Real-time basketball shot tracking and analysis using Gemini Live Vision API. Tracks makes, misses, and positions automatically.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
